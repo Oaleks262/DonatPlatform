@@ -1,5 +1,6 @@
 const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
+const fs = require('fs');
 
 class Database {
     constructor() {
@@ -9,7 +10,14 @@ class Database {
 
     async init() {
         return new Promise((resolve, reject) => {
-            const dbPath = path.join(__dirname, 'data', 'donations.db');
+            const dataDir = path.join(__dirname, 'data');
+            const dbPath = path.join(dataDir, 'donations.db');
+            
+            // Створюємо папку data якщо її немає
+            if (!fs.existsSync(dataDir)) {
+                fs.mkdirSync(dataDir, { recursive: true });
+                console.log('Created data directory');
+            }
             
             this.db = new sqlite3.Database(dbPath, (err) => {
                 if (err) {
