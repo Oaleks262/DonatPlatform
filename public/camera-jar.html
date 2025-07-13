@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Банка: На фотоапарат - Monobank</title>
+    <link rel="stylesheet" href="donations.css">
+    <style>
+        .jar-container {
+            max-width: 600px;
+            margin: 2rem auto;
+            padding: 2rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+            color: white;
+            text-align: center;
+        }
+
+        .jar-title {
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin-bottom: 1rem;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .jar-description {
+            font-size: 1.1rem;
+            opacity: 0.9;
+            margin-bottom: 2rem;
+            line-height: 1.6;
+        }
+
+        .progress-container {
+            background: rgba(255,255,255,0.2);
+            border-radius: 50px;
+            padding: 8px;
+            margin: 2rem 0;
+        }
+
+        .progress-bar {
+            background: linear-gradient(90deg, #56ab2f, #a8e6cf);
+            height: 30px;
+            border-radius: 50px;
+            transition: width 0.5s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #2d5016;
+            font-weight: bold;
+            font-size: 0.9rem;
+        }
+
+        .amounts {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 1rem;
+            font-size: 1.2rem;
+        }
+
+        .current-amount {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #a8e6cf;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .goal-amount {
+            opacity: 0.8;
+        }
+
+        .refresh-button {
+            background: rgba(255,255,255,0.2);
+            border: 2px solid rgba(255,255,255,0.3);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1rem;
+            margin-top: 2rem;
+            transition: all 0.3s ease;
+        }
+
+        .refresh-button:hover {
+            background: rgba(255,255,255,0.3);
+            border-color: rgba(255,255,255,0.5);
+        }
+
+        .loading {
+            opacity: 0.6;
+        }
+
+        .cache-status {
+            font-size: 0.8rem;
+            opacity: 0.7;
+            margin-top: 1rem;
+            padding: 0.5rem;
+            background: rgba(255,255,255,0.1);
+            border-radius: 5px;
+        }
+
+        .cache-fresh {
+            color: #a8e6cf;
+        }
+
+        .cache-stale {
+            color: #ffd54f;
+        }
+
+        .error {
+            background: linear-gradient(135deg, #ff6b6b, #ee5a52);
+            text-align: center;
+            padding: 1rem;
+            border-radius: 10px;
+            margin: 1rem 0;
+        }
+
+        .back-button {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            color: white;
+            text-decoration: none;
+            font-size: 1.2rem;
+            background: rgba(255,255,255,0.2);
+            padding: 10px 15px;
+            border-radius: 10px;
+            transition: background 0.3s ease;
+        }
+
+        .back-button:hover {
+            background: rgba(255,255,255,0.3);
+        }
+
+        .camera-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <a href="/" class="back-button">← Назад</a>
+    
+    <div class="jar-container" id="jar-container">
+        <div class="loading" id="loading">
+            <span class="camera-icon">📷</span>
+            <div class="jar-title">Завантаження...</div>
+        </div>
+    </div>
+
+    <script>
+        let jarData = null;
+
+        async function loadJarData() {
+            const container = document.getElementById('jar-container');
+            const loading = document.getElementById('loading');
+            
+            try {
+                loading.style.display = 'block';
+                
+                const response = await fetch('/api/jar/camera');
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                jarData = await response.json();
+                displayJarData();
+                
+            } catch (error) {
+                console.error('Error loading jar data:', error);
+                container.innerHTML = `
+                    <div class="error">
+                        <div class="jar-title">❌ Помилка</div>
+                        <div>Не вдалося завантажити дані про банку</div>
+                        <button class="refresh-button" onclick="loadJarData()">🔄 Спробувати знову</button>
+                    </div>
+                `;
+            } finally {
+                loading.style.display = 'none';
+            }
+        }
+
+        function displayJarData() {
+            const container = document.getElementById('jar-container');
+            
+            if (!jarData) return;
+            
+            const progressWidth = Math.min(jarData.progress, 100);
+            
+            // Визначаємо статус кешування
+            const cacheStatus = jarData.cached ? 
+                '<div class="cache-status cache-fresh">✅ Дані з кешу (дотримання rate limit)</div>' : 
+                '<div class="cache-status cache-stale">🔄 Свіжі дані з API</div>';
+            
+            container.innerHTML = `
+                <span class="camera-icon">📷</span>
+                <div class="jar-title">${jarData.title}</div>
+                ${jarData.description ? `<div class="jar-description">${jarData.description}</div>` : ''}
+                
+                <div class="current-amount">${jarData.balance.toLocaleString('uk-UA')} ₴</div>
+                
+                <div class="progress-container">
+                    <div class="progress-bar" style="width: ${progressWidth}%">
+                        ${jarData.progress}%
+                    </div>
+                </div>
+                
+                <div class="amounts">
+                    <span>Зібрано: ${jarData.balance.toLocaleString('uk-UA')} ₴</span>
+                    <span class="goal-amount">Ціль: ${jarData.goal.toLocaleString('uk-UA')} ₴</span>
+                </div>
+                
+                <button class="refresh-button" onclick="loadJarData()">🔄 Оновити</button>
+                ${cacheStatus}
+            `;
+        }
+
+        // Автоматичне оновлення кожні 30 секунд
+        setInterval(loadJarData, 30000);
+
+        // Завантажити дані при завантаженні сторінки
+        loadJarData();
+    </script>
+</body>
+</html>

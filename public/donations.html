@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Донати - Monobank OBS</title>
+    <link rel="stylesheet" href="donations.css">
+</head>
+<body>
+    <div class="connection-status" id="connection-status">🔴 Підключення...</div>
+    
+    <div class="container">
+        <a href="/" class="back-button">← Назад</a>
+        
+        <div class="header">
+            <h1>💰 Донати</h1>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <span class="stat-value" id="total-amount">0 ₴</span>
+                <span class="stat-label">Загальна сума</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-value" id="total-count">0</span>
+                <span class="stat-label">Кількість донатів</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-value" id="unique-donors">0</span>
+                <span class="stat-label">Унікальних донатерів</span>
+            </div>
+        </div>
+
+        <div class="content-grid">
+            <div class="section">
+                <h2>🕒 Останні донати</h2>
+                <ul class="donations-list" id="recent-donations">
+                    <li class="donation-item">
+                        <div style="text-align: center; opacity: 0.6; padding: 2rem;">
+                            Завантаження...
+                        </div>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="section">
+                <h2>🏆 Топ донатерів</h2>
+                <div id="top-donors">
+                    <div style="text-align: center; opacity: 0.6; padding: 2rem;">
+                        Завантаження...
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="controls">
+            <button class="refresh-button" id="refresh-btn">🔄 Оновити</button>
+            <button class="test-button" id="test-btn">🧪 Тестовий донат</button>
+        </div>
+    </div>
+
+    <script src="donations.js"></script>
+</body>
+</html>

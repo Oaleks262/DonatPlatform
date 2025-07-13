@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OBS Оверлей - Monobank</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: transparent;
+            color: white;
+            overflow: hidden;
+            height: 100vh;
+            position: relative;
+        }
+
+        .donation-alert {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0);
+            background: linear-gradient(135deg, rgba(255, 107, 107, 0.95), rgba(254, 202, 87, 0.95));
+            padding: 2rem 3rem;
+            border-radius: 20px;
+            text-align: center;
+            backdrop-filter: blur(20px);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            z-index: 1000;
+            opacity: 0;
+            transition: all 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            max-width: 500px;
+            min-width: 400px;
+        }
+
+        .donation-alert.show {
+            transform: translate(-50%, -50%) scale(1);
+            opacity: 1;
+        }
+
+        .donation-alert.hide {
+            transform: translate(-50%, -50%) scale(0.8);
+            opacity: 0;
+        }
+
+        .alert-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            animation: bounce 1s infinite;
+        }
+
+        .donor-name {
+            font-size: 2rem;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+
+        .donation-amount {
+            font-size: 3rem;
+            font-weight: bold;
+            color: #4caf50;
+            margin-bottom: 1rem;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+            animation: pulse 1s infinite;
+        }
+
+        .donation-message {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            font-style: italic;
+            max-height: 100px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            margin-bottom: 0.5rem;
+        }
+
+        .donation-comment {
+            font-size: 1rem;
+            opacity: 0.8;
+            color: #e0e0e0;
+            margin-bottom: 0.5rem;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 0.5rem;
+            border-radius: 8px;
+            border-left: 3px solid #ffd54f;
+        }
+
+        .sender-info {
+            font-size: 0.9rem;
+            opacity: 0.7;
+            color: #b0b0b0;
+        }
+
+        .thank-you {
+            font-size: 1.5rem;
+            margin-top: 1rem;
+            color: #ffd54f;
+            font-weight: bold;
+        }
+
+
+        .goal-progress {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.4);
+            padding: 1.5rem;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            min-width: 200px;
+            animation: fadeInLeft 1s ease;
+        }
+
+        .goal-title {
+            font-size: 1rem;
+            font-weight: bold;
+            margin-bottom: 1rem;
+            color: #ffd54f;
+            text-align: center;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            overflow: hidden;
+            margin-bottom: 0.5rem;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4caf50, #8bc34a);
+            border-radius: 10px;
+            transition: width 1s ease;
+            position: relative;
+        }
+
+        .progress-fill::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            animation: shimmer 2s infinite;
+        }
+
+        .goal-text {
+            text-align: center;
+            font-size: 0.9rem;
+        }
+
+        .fireworks {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 999;
+        }
+
+        .firework {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: #ffd54f;
+            border-radius: 50%;
+            animation: firework 1s ease-out forwards;
+        }
+
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% {
+                transform: translateY(0);
+            }
+            40% {
+                transform: translateY(-10px);
+            }
+            60% {
+                transform: translateY(-5px);
+            }
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.1);
+            }
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        @keyframes fadeInRight {
+            from {
+                opacity: 0;
+                transform: translateX(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        @keyframes fadeInLeft {
+            from {
+                opacity: 0;
+                transform: translateX(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        @keyframes slideInLeft {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        @keyframes shimmer {
+            0% {
+                transform: translateX(-100%);
+            }
+            100% {
+                transform: translateX(100%);
+            }
+        }
+
+        @keyframes firework {
+            0% {
+                transform: scale(0) rotate(0deg);
+                opacity: 1;
+            }
+            100% {
+                transform: scale(1) rotate(180deg);
+                opacity: 0;
+            }
+        }
+
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 3px;
+        }
+
+        .sound-toggle {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.4);
+            color: white;
+            border: none;
+            padding: 0.5rem;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 1.2rem;
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .sound-toggle:hover {
+            background: rgba(0, 0, 0, 0.6);
+            transform: scale(1.1);
+        }
+
+        .sound-settings {
+            position: fixed;
+            bottom: 20px;
+            right: 80px;
+            background: rgba(0, 0, 0, 0.4);
+            color: white;
+            padding: 1rem;
+            border-radius: 10px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            display: none;
+            min-width: 200px;
+        }
+
+        .sound-settings.show {
+            display: block;
+            animation: fadeInRight 0.3s ease;
+        }
+
+        .volume-control {
+            margin-bottom: 0.5rem;
+        }
+
+        .volume-control label {
+            display: block;
+            font-size: 0.8rem;
+            margin-bottom: 0.3rem;
+            opacity: 0.9;
+        }
+
+        .volume-control input[type="range"] {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 5px;
+            outline: none;
+            height: 5px;
+        }
+
+        .sound-test {
+            background: rgba(76, 175, 80, 0.3);
+            border: 1px solid rgba(76, 175, 80, 0.5);
+            color: white;
+            padding: 0.3rem 0.6rem;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            margin: 0.2rem 0;
+            width: 100%;
+        }
+
+        .sound-test:hover {
+            background: rgba(76, 175, 80, 0.5);
+        }
+    </style>
+</head>
+<body>
+    <div class="goal-progress" id="goal-progress">
+        <div class="goal-title">Ціль: 10,000 ₴</div>
+        <div class="progress-bar">
+            <div class="progress-fill" id="progress-fill" style="width: 0%"></div>
+        </div>
+        <div class="goal-text" id="goal-text">0 ₴ / 10,000 ₴</div>
+    </div>
+
+
+    <div class="donation-alert" id="donation-alert">
+        <div class="alert-icon">💰</div>
+        <div class="donor-name" id="alert-donor"></div>
+        <div class="donation-amount" id="alert-amount"></div>
+        <div class="donation-message" id="alert-message"></div>
+        <div class="donation-comment" id="alert-comment" style="display: none;"></div>
+        <div class="sender-info" id="alert-sender" style="display: none;"></div>
+        <div class="thank-you">Дякуємо за підтримку! ❤️</div>
+    </div>
+
+    <div class="fireworks" id="fireworks"></div>
+
+    <button class="sound-toggle" id="sound-toggle" title="Налаштування звуку">🔊</button>
+    
+    <div class="sound-settings" id="sound-settings">
+        <div style="font-weight: bold; margin-bottom: 0.5rem; text-align: center;">🔊 Звукові налаштування</div>
+        
+        <div class="volume-control">
+            <label>Основна гучність</label>
+            <input type="range" id="master-volume" min="0" max="100" value="50">
+        </div>
+        
+        <div style="font-size: 0.8rem; margin: 0.5rem 0; opacity: 0.8;">Тестові звуки:</div>
+        
+        <button class="sound-test" onclick="overlay.testSound(50)">🔔 Малий донат (< 100₴)</button>
+        <button class="sound-test" onclick="overlay.testSound(200)">🎵 Середній (100-499₴)</button>
+        <button class="sound-test" onclick="overlay.testSound(700)">🎶 Великий (500-999₴)</button>
+        <button class="sound-test" onclick="overlay.testSound(1500)">🎊 Максі донат (1000₴+)</button>
+        
+        <div style="font-size: 0.7rem; margin-top: 0.5rem; opacity: 0.6; text-align: center;">
+            Налаштування зберігаються автоматично
+        </div>
+    </div>
+
+    <script>
+        class OBSOverlay {
+            constructor() {
+                this.ws = null;
+                this.isConnected = false;
+                this.soundEnabled = true;
+                this.masterVolume = 0.5;
+                this.goal = 10000;
+                this.currentAmount = 0;
+                this.settingsVisible = false;
+                this.audioPromptShown = false;
+                
+                // Призначаємо глобальну змінну для доступу з HTML
+                window.overlay = this;
+                
+                this.init();
+            }
+
+            init() {
+                this.connectWebSocket();
+                this.loadInitialData();
+                this.setupEventListeners();
+                this.startPeriodicRefresh();
+            }
+
+            connectWebSocket() {
+                const wsPort = window.location.hostname === 'localhost' ? '8080' : '8080';
+                const wsUrl = `ws://${window.location.hostname}:${wsPort}`;
+                
+                try {
+                    this.ws = new WebSocket(wsUrl);
+                    
+                    this.ws.onopen = () => {
+                        console.log('WebSocket connected');
+                        this.isConnected = true;
+                    };
+
+                    this.ws.onmessage = (event) => {
+                        try {
+                            const message = JSON.parse(event.data);
+                            this.handleWebSocketMessage(message);
+                        } catch (error) {
+                            console.error('Error parsing WebSocket message:', error);
+                        }
+                    };
+
+                    this.ws.onclose = () => {
+                        console.log('WebSocket disconnected');
+                        this.isConnected = false;
+                        this.handleReconnect();
+                    };
+
+                    this.ws.onerror = (error) => {
+                        console.error('WebSocket error:', error);
+                        this.isConnected = false;
+                    };
+
+                } catch (error) {
+                    console.error('Error creating WebSocket:', error);
+                    this.handleReconnect();
+                }
+            }
+
+            handleWebSocketMessage(message) {
+                if (message.type === 'new_donation') {
+                    this.showDonationAlert(message.data);
+                    this.updateJarInfo(); // Оновлюємо тільки прогрес банки
+                }
+            }
+
+            handleReconnect() {
+                setTimeout(() => {
+                    this.connectWebSocket();
+                }, 5000);
+            }
+
+            async loadInitialData() {
+                await this.updateJarInfo();
+            }
+
+            async updateJarInfo() {
+                try {
+                    const response = await fetch('/api/jar/camera');
+                    const jarInfo = await response.json();
+                    
+                    this.goal = jarInfo.goal;
+                    this.currentAmount = jarInfo.balance;
+                    
+                    document.querySelector('.goal-title').textContent = `${jarInfo.title}: ${jarInfo.goal.toLocaleString('uk-UA')} ₴`;
+                    this.updateGoalProgress();
+                } catch (error) {
+                    console.error('Error fetching jar info:', error);
+                }
+            }
+
+
+            updateGoalProgress() {
+                const progress = Math.min((this.currentAmount / this.goal) * 100, 100);
+                document.getElementById('progress-fill').style.width = `${progress}%`;
+                document.getElementById('goal-text').textContent = 
+                    `${this.currentAmount.toLocaleString('uk-UA')} ₴ / ${this.goal.toLocaleString('uk-UA')} ₴`;
+            }
+
+
+            showDonationAlert(donation) {
+                const alert = document.getElementById('donation-alert');
+                const donor = document.getElementById('alert-donor');
+                const amount = document.getElementById('alert-amount');
+                const message = document.getElementById('alert-message');
+                const comment = document.getElementById('alert-comment');
+                const sender = document.getElementById('alert-sender');
+                
+                donor.textContent = donation.name;
+                amount.textContent = `${donation.amount.toLocaleString('uk-UA')} ₴`;
+                message.textContent = donation.description || '';
+                
+                // Показуємо коментар якщо він є
+                if (donation.comment && donation.comment.trim()) {
+                    comment.textContent = `💬 "${donation.comment}"`;
+                    comment.style.display = 'block';
+                } else {
+                    comment.style.display = 'none';
+                }
+                
+                // Показуємо інформацію про відправника якщо вона відрізняється від імені
+                if (donation.counterName && donation.counterName !== donation.name && donation.counterName !== 'Невідомий відправник') {
+                    sender.textContent = `📤 від ${donation.counterName}`;
+                    sender.style.display = 'block';
+                } else {
+                    sender.style.display = 'none';
+                }
+                
+                alert.classList.add('show');
+                
+                this.playDonationSound(donation);
+                
+                if (donation.amount >= 500) {
+                    this.createFireworks();
+                }
+                
+                setTimeout(() => {
+                    alert.classList.remove('show');
+                    alert.classList.add('hide');
+                    
+                    setTimeout(() => {
+                        alert.classList.remove('hide');
+                    }, 500);
+                }, 5000);
+            }
+
+            playDonationSound(donation) {
+                if (!this.soundEnabled) {
+                    console.log('🔇 Sound disabled');
+                    return;
+                }
+                
+                try {
+                    let soundFile;
+                    let baseVolume = 0.5;
+                    
+                    // Вибираємо звук залежно від суми
+                    if (donation.amount >= 1000) {
+                        soundFile = 'sounds/big-donation.mp3';
+                        baseVolume = 0.8;
+                    } else if (donation.amount >= 500) {
+                        soundFile = 'sounds/medium-donation.mp3';
+                        baseVolume = 0.7;
+                    } else if (donation.amount >= 100) {
+                        soundFile = 'sounds/small-donation.mp3';
+                        baseVolume = 0.6;
+                    } else {
+                        soundFile = 'sounds/tiny-donation.mp3';
+                        baseVolume = 0.5;
+                    }
+                    
+                    console.log(`🔊 Playing sound: ${soundFile} (volume: ${(baseVolume * this.masterVolume).toFixed(2)})`);
+                    
+                    const audio = new Audio(soundFile);
+                    audio.volume = baseVolume * this.masterVolume;
+                    
+                    audio.addEventListener('loadstart', () => {
+                        console.log('🎵 Audio loading started');
+                    });
+                    
+                    audio.addEventListener('canplay', () => {
+                        console.log('🎵 Audio ready to play');
+                    });
+                    
+                    audio.addEventListener('error', (e) => {
+                        console.error('❌ Sound file error:', e.target.error);
+                        console.log('🔄 Trying default beep...');
+                        this.playDefaultSound(baseVolume);
+                    });
+                    
+                    audio.play().then(() => {
+                        console.log('✅ Audio playing successfully');
+                    }).catch(e => {
+                        console.error('❌ Could not play sound file:', e);
+                        if (e.name === 'NotAllowedError') {
+                            console.log('⚠️ Browser blocks audio without user interaction');
+                            this.showAudioPrompt();
+                        } else {
+                            console.log('🔄 Trying default beep...');
+                            this.playDefaultSound(baseVolume);
+                        }
+                    });
+                    
+                } catch (e) {
+                    console.error('❌ Error with sound system:', e);
+                    this.playDefaultSound(0.5);
+                }
+            }
+            
+            playDefaultSound(baseVolume = 0.5) {
+                try {
+                    console.log('🔔 Playing default beep sound');
+                    const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+j2v2MaBjOH0sW/hUofPzWw8bCKAg==');
+                    audio.volume = baseVolume * this.masterVolume;
+                    audio.play().then(() => {
+                        console.log('✅ Default beep played successfully');
+                    }).catch(e => {
+                        console.error('❌ Could not play default sound:', e);
+                        if (e.name === 'NotAllowedError') {
+                            this.showAudioPrompt();
+                        }
+                    });
+                } catch (e) {
+                    console.error('❌ Could not create default audio:', e);
+                }
+            }
+            
+            showAudioPrompt() {
+                if (this.audioPromptShown) return;
+                this.audioPromptShown = true;
+                
+                console.log('⚠️ Showing audio permission prompt');
+                
+                // Створюємо кнопку для активації звуку
+                const prompt = document.createElement('div');
+                prompt.style.cssText = `
+                    position: fixed;
+                    top: 50%;
+                    left: 50%;
+                    transform: translate(-50%, -50%);
+                    background: rgba(0, 0, 0, 0.9);
+                    color: white;
+                    padding: 2rem;
+                    border-radius: 10px;
+                    text-align: center;
+                    z-index: 10000;
+                    border: 2px solid #ffd54f;
+                `;
+                prompt.innerHTML = `
+                    <div style="font-size: 1.5rem; margin-bottom: 1rem;">🔊</div>
+                    <div style="margin-bottom: 1rem;">Клікніть щоб активувати звук</div>
+                    <button style="background: #4caf50; color: white; border: none; padding: 0.5rem 1rem; border-radius: 5px; cursor: pointer;">
+                        Активувати звук
+                    </button>
+                `;
+                
+                const button = prompt.querySelector('button');
+                button.addEventListener('click', () => {
+                    // Спробуємо відтворити тихий звук щоб розблокувати аудіо
+                    const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+j2v2MaBjOH0sW/hUofPzWw8bCKAg==');
+                    audio.volume = 0.01;
+                    audio.play().then(() => {
+                        console.log('✅ Audio context unlocked');
+                        document.body.removeChild(prompt);
+                    }).catch(e => {
+                        console.error('❌ Still could not unlock audio:', e);
+                    });
+                });
+                
+                document.body.appendChild(prompt);
+            }
+            
+            testSound(amount) {
+                if (!this.soundEnabled) {
+                    alert('Звук вимкнено! Натисніть на кнопку звуку щоб ввімкнути.');
+                    return;
+                }
+                
+                // Створюємо фейковий донат для тесту
+                const testDonation = {
+                    amount: amount,
+                    name: 'Тестовий Донатер',
+                    description: 'Це тестовий звук!'
+                };
+                
+                this.playDonationSound(testDonation);
+            }
+
+            createFireworks() {
+                const container = document.getElementById('fireworks');
+                const colors = ['#ff6b6b', '#4ecdc4', '#45b7d1', '#96ceb4', '#feca57', '#ff9ff3', '#54a0ff'];
+                
+                for (let i = 0; i < 15; i++) {
+                    setTimeout(() => {
+                        const firework = document.createElement('div');
+                        firework.className = 'firework';
+                        firework.style.left = Math.random() * 100 + '%';
+                        firework.style.top = Math.random() * 100 + '%';
+                        firework.style.background = colors[Math.floor(Math.random() * colors.length)];
+                        
+                        container.appendChild(firework);
+                        
+                        setTimeout(() => {
+                            container.removeChild(firework);
+                        }, 1000);
+                    }, i * 100);
+                }
+            }
+
+            setupEventListeners() {
+                // Кнопка звуку та налаштувань
+                document.getElementById('sound-toggle').addEventListener('click', () => {
+                    this.settingsVisible = !this.settingsVisible;
+                    const settings = document.getElementById('sound-settings');
+                    
+                    if (this.settingsVisible) {
+                        settings.classList.add('show');
+                    } else {
+                        settings.classList.remove('show');
+                    }
+                });
+                
+                // Гучність
+                const volumeSlider = document.getElementById('master-volume');
+                volumeSlider.addEventListener('input', (e) => {
+                    this.masterVolume = e.target.value / 100;
+                    this.soundEnabled = this.masterVolume > 0;
+                    
+                    // Оновлюємо іконку
+                    document.getElementById('sound-toggle').textContent = this.soundEnabled ? '🔊' : '🔇';
+                    
+                    // Зберігаємо
+                    localStorage.setItem('obs-sound-enabled', this.soundEnabled);
+                    localStorage.setItem('obs-master-volume', this.masterVolume);
+                });
+                
+                // Приховуємо налаштування при кліку поза ними
+                document.addEventListener('click', (e) => {
+                    if (!e.target.closest('.sound-settings') && !e.target.closest('.sound-toggle')) {
+                        this.settingsVisible = false;
+                        document.getElementById('sound-settings').classList.remove('show');
+                    }
+                });
+                
+                // Завантажуємо збережені налаштування
+                const savedSoundSetting = localStorage.getItem('obs-sound-enabled');
+                const savedVolume = localStorage.getItem('obs-master-volume');
+                
+                if (savedVolume !== null) {
+                    this.masterVolume = parseFloat(savedVolume);
+                    volumeSlider.value = this.masterVolume * 100;
+                }
+                
+                if (savedSoundSetting !== null) {
+                    this.soundEnabled = savedSoundSetting === 'true';
+                } else {
+                    this.soundEnabled = this.masterVolume > 0;
+                }
+                
+                document.getElementById('sound-toggle').textContent = this.soundEnabled ? '🔊' : '🔇';
+            }
+
+            startPeriodicRefresh() {
+                // Оновлюємо інформацію про банку для актуального балансу
+                setInterval(() => {
+                    this.updateJarInfo();
+                }, 60000);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            new OBSOverlay();
+        });
+    </script>
+</body>
+</html>
